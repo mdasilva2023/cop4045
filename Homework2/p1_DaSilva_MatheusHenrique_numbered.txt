@@ -1,0 +1,147 @@
+1. # -*- coding: utf-8 -*-
+2. """
+3. Matheus Henrique Da Silva
+4. """
+5. 
+6. import ast
+7. import io
+8. import os
+9. import tokenize
+10. 
+11. 
+12. def line_number(input_filename: str, output_filename: str) -> None:
+13.     """
+14.     Read a text file and write its contents to another file with
+15.     each line prefixed by its line number.
+16.     """
+17.     try:
+18.         with open(input_filename, "r", encoding="utf-8") as input_file:
+19.             lines = input_file.readlines()
+20. 
+21.         with open(output_filename, "w", encoding="utf-8") as output_file:
+22.             for number, line in enumerate(lines, start=1):
+23.                 output_file.write(
+24.                     f"{number}. {line.rstrip(chr(10))}\n"
+25.                 )
+26. 
+27.     except Exception as error:
+28.         print(
+29.             f"Error while numbering lines in "
+30.             f"'{input_filename}': {error}"
+31.         )
+32.         raise
+33. 
+34. 
+35. def parse_functions(
+36.         filename: str
+37. ) -> tuple[tuple[int, str, str, str], ...]:
+38.     """
+39.     Parse a Python file and return information about its top-level
+40.     functions.
+41. 
+42.     Each returned tuple contains the function's line number,
+43.     function name, formal argument list, and function code.
+44.     Empty lines and comments are removed from the function code.
+45.     """
+46.     try:
+47.         with open(filename, "r", encoding="utf-8") as file:
+48.             source = file.read()
+49. 
+50.         tree = ast.parse(source, filename=filename)
+51. 
+52.         source_lines = source.splitlines(keepends=True)
+53. 
+54.         functions = []
+55. 
+56.         for node in tree.body:
+57. 
+58.             if isinstance(
+59.                     node,
+60.                     (ast.FunctionDef, ast.AsyncFunctionDef)
+61.             ):
+62. 
+63.                 line_num = node.lineno
+64. 
+65.                 function_name = node.name
+66. 
+67.                 arguments = ast.unparse(node.args)
+68. 
+69.                 function_source = "".join(
+70.                     source_lines[
+71.                         node.lineno - 1:
+72.                         node.end_lineno
+73.                     ]
+74.                 )
+75. 
+76.                 tokens = tokenize.generate_tokens(
+77.                     io.StringIO(function_source).readline
+78.                 )
+79. 
+80.                 tokens_without_comments = [
+81.                     token
+82.                     for token in tokens
+83.                     if token.type != tokenize.COMMENT
+84.                 ]
+85. 
+86.                 cleaned_source = tokenize.untokenize(
+87.                     tokens_without_comments
+88.                 )
+89. 
+90.                 cleaned_lines = [
+91.                     line.rstrip()
+92.                     for line in cleaned_source.splitlines()
+93.                     if line.strip()
+94.                 ]
+95. 
+96.                 function_code = "\n".join(cleaned_lines) + "\n"
+97. 
+98.                 functions.append(
+99.                     (
+100.                         line_num,
+101.                         function_name,
+102.                         arguments,
+103.                         function_code
+104.                     )
+105.                 )
+106. 
+107.         functions.sort(
+108.             key=lambda item: item[1]
+109.         )
+110. 
+111.         return tuple(functions)
+112. 
+113.     except Exception as error:
+114.         print(
+115.             f"Error while parsing "
+116.             f"'{filename}': {error}"
+117.         )
+118.         raise
+119. 
+120. 
+121. def main() -> None:
+122.     """
+123.     test line_number and parse_functions using this
+124.     """
+125.     print("Name: Matheus Henrique Da Silva - Z23704669")
+126.     print()
+127. 
+128.     source_file = os.path.abspath(__file__)
+129. 
+130.     output_file = os.path.join(
+131.         os.path.dirname(source_file),
+132.         "p1_DaSilva_MatheusHenrique_numbered.txt"
+133.     )
+134. 
+135.     print("PART A - line_number")
+136.     line_number(source_file, output_file)
+137.     print(f"Numbered file created: {output_file}")
+138. 
+139.     print("\nPART B - parse_functions")
+140.     parsed_functions = parse_functions(source_file)
+141. 
+142.     print("Returned tuple from parse_functions:")
+143.     print(parsed_functions)
+144. 
+145. 
+146. if __name__ == "__main__":
+147.     main()
